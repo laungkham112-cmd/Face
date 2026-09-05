@@ -2,7 +2,7 @@
   <div class="container">
     <div class="header">
       <h1>AI 换脸工作室</h1>
-      <p>由先进人工智能模型驱动的下一代换脸技术</p>
+      <p>由先进人工智能模型驱动的下一代面部融合技术</p>
     </div>
 
     <div class="main-card">
@@ -31,14 +31,13 @@
           </div>
         </div>
 
-        <!-- 🛡️ 强制解锁按钮方便调试，只要上传了文件就可以点击 -->
         <button 
           class="submit-btn" 
           @click="startFaceSwap" 
           :disabled="isLoading || !sourcePreview || !targetPreview"
         >
           <span v-if="isLoading" class="spinner"></span>
-          {{ isLoading ? '处理中...' : '开始生成 (消耗 1 点数)' }}
+          {{ isLoading ? 'AI 正在努力换脸中...' : '开始生成 (消耗 1 点数)' }}
         </button>
       </div>
 
@@ -50,14 +49,14 @@
 
         <div v-if="isLoading" class="loading-state">
           <div class="pulse-circle">🤖</div>
-          <p class="loading-text">提取面部特征……</p>
-          <p class="sub-loading-text">通常需要 5-15 秒</p>
+          <p class="loading-text">提取面部特征并融合光影……</p>
+          <p class="sub-loading-text">正在向云端提交请求，请保持网页开启</p>
         </div>
 
         <div v-if="resultImage && !isLoading" class="success-state">
-          <span class="success-tag">✨ 生成成功</span>
+          <span class="success-tag">✨ 生成成功！</span>
           <img :src="resultImage" class="final-img" />
-          <a :href="resultImage" download="faceswap-result.png" class="download-btn">下载超清图片</a>
+          <a :href="resultImage" target="_blank" download="faceswap-result.png" class="download-btn">下载超清图片</a>
         </div>
       </div>
     </div>
@@ -79,11 +78,10 @@ const triggerInput = (type) => {
   if (type === 'target') targetInput.value.click()
 }
 
-// 🚀 核心改进：换用兼容性极高的 FileReader 标准提取流
 const handleFileChange = (event, type) => {
   const files = event.target.files
   if (!files || files.length === 0) return
-  const file = files[0]
+  const file = files
 
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -102,7 +100,8 @@ const startFaceSwap = async () => {
   resultImage.value = ''
 
   try {
-    const response = await fetch('https://vercel.app', {
+    // 🚀 适配相对路由，完美解决跨域和长网址域名污染死结
+    const response = await fetch('/api/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -114,13 +113,13 @@ const startFaceSwap = async () => {
     const data = await response.json()
     
     if (response.ok && data.output) {
-      resultImage.value = data.output
+      resultImage.value = data.output // 渲染完美解包后的超清公网图片 URL
     } else {
-      alert('生成失败: ' + (data.error || '未返回有效数据'))
+      alert('提示: ' + (data.error || '服务器正忙，请重新尝试生成'))
     }
   } catch (error) {
     console.error(error)
-    alert('网络请求失败，请稍后重试')
+    alert('网络出现短暂震荡，请再次点击生成')
   } finally {
     isLoading.value = false
   }
