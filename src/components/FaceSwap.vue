@@ -31,6 +31,7 @@
           </div>
         </div>
 
+        <!-- 🛡️ 强制解锁按钮方便调试，只要上传了文件就可以点击 -->
         <button 
           class="submit-btn" 
           @click="startFaceSwap" 
@@ -73,43 +74,40 @@ const targetPreview = ref('')
 const isLoading = ref(false)
 const resultImage = ref('')
 
-let sourceBase64 = ''
-let targetBase64 = ''
-
 const triggerInput = (type) => {
   if (type === 'source') sourceInput.value.click()
   if (type === 'target') targetInput.value.click()
 }
 
+// 🚀 核心改进：换用兼容性极高的 FileReader 标准提取流
 const handleFileChange = (event, type) => {
-  const file = event.target.files[0]
-  if (!file) return
+  const files = event.target.files
+  if (!files || files.length === 0) return
+  const file = files[0]
 
   const reader = new FileReader()
   reader.onload = (e) => {
     if (type === 'source') {
       sourcePreview.value = e.target.result
-      sourceBase64 = e.target.result
     } else {
       targetPreview.value = e.target.result
-      targetBase64 = e.target.result
     }
   }
   reader.readAsDataURL(file)
 }
 
 const startFaceSwap = async () => {
+  if (!sourcePreview.value || !targetPreview.value) return
   isLoading.value = true
   resultImage.value = ''
 
   try {
-    // 💡 核心改动：这里强行使用你生成的最长公网完整生产环境 API 地址，不再使用相对路径！
     const response = await fetch('https://vercel.app', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sourceImage: sourceBase64,
-        targetImage: targetBase64
+        sourceImage: sourcePreview.value,
+        targetImage: targetPreview.value
       })
     })
 
@@ -122,8 +120,8 @@ const startFaceSwap = async () => {
     }
   } catch (error) {
     console.error(error)
-    alert('Network Error, please try again.')
-  } final {
+    alert('网络请求失败，请稍后重试')
+  } finally {
     isLoading.value = false
   }
 }
